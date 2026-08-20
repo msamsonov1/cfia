@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CognitiveForensics-AI™ (CFIA) - Federal Forensic Workbench</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f6fe',
+              100: '#e0edfe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+              950: '#0f172a',
+            },
+            federal: {
+              gold: '#d97706',
+              red: '#ef4444',
+              emerald: '#10b981',
+              dark: '#090d16',
+              panel: '#111827',
+              border: '#1f2937'
+            }
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'Courier New', 'monospace'],
+            sans: ['Inter', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #1f293d; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #374151; }
+
+    .pulse-indicator {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulse-green 2s infinite;
+    }
+    @keyframes pulse-green {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    
+    .glow-red { text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+    .glow-blue { text-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+  </style>
+</head>
+<body class="h-full font-sans antialiased bg-federal-dark text-slate-200 flex flex-col overflow-hidden select-none">
+
+  <!-- TOP FEDERAL BANNER -->
+  <div class="bg-slate-900 border-b border-slate-800 text-[11px] font-mono px-4 py-1.5 flex items-center justify-between text-slate-400 z-50">
+    <div class="flex items-center space-x-3">
+      <span class="bg-red-950/80 text-red-400 border border-red-800/80 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+        CUI // FED-ONLY // FRE-902 COMPLIANT
+      </span>
+      <span class="hidden md:inline"><i class="fa-solid fa-building-columns text-blue-400 mr-1.5"></i>DOJ Fraud Section & FBI Financial Crimes Unit</span>
+    </div>
+    <div class="flex items-center space-x-4">
+      <span class="flex items-center gap-1.5 text-slate-300">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-indicator"></span>
+        SCIF Air-Gapped Engine: <strong class="text-emerald-400">ONLINE</strong>
+      </span>
+      <span class="hidden lg:inline text-slate-500">|</span>
+      <span class="hidden lg:inline text-slate-400"><i class="fa-solid fa-shield-halved text-amber-500 mr-1"></i>FedRAMP High (IL-6)</span>
+      <span class="text-slate-500">|</span>
+      <span class="text-slate-300 font-mono" id="live-clock">16:55:00 UTC</span>
+    </div>
+  </div>
+
+  <!-- NAVIGATION & CASE HEADER -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-4 z-40">
+    <div class="flex items-center space-x-4">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded bg-gradient-to-br from-blue-700 to-indigo-900 border border-blue-500/30 flex items-center justify-center font-black text-white text-lg tracking-tighter shadow-lg shadow-blue-950">
+          CF
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-extrabold tracking-tight text-white uppercase">CognitiveForensics<span class="text-blue-500">-AI</span></h1>
+            <span class="text-[9px] font-mono bg-blue-950 text-blue-400 border border-blue-800 px-1.5 py-0.5 rounded">v4.8-FED</span>
+          </div>
+          <p class="text-[11px] text-slate-400 font-mono">Behavioral Intent & Semantic E-Discovery System</p>
+        </div>
+      </div>
+
+      <!-- Active Case Selector -->
+      <div class="h-6 w-px bg-slate-800 hidden sm:block"></div>
+      <div class="flex items-center gap-2">
+        <label for="caseSelect" class="text-xs text-slate-400 font-medium hidden lg:block">Active Matter:</label>
+        <select id="caseSelect" class="bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-xs text-amber-400 font-mono font-bold focus:outline-none focus:border-blue-500">
+          <option value="case-892">CASE #892-FCPA: Operation Titan (Multinational Energy Bribery)</option>
+          <option value="case-412">CASE #412-SEC: Apex Securities (Pump & Dump Conspiracy)</option>
+          <option value="case-901">CASE #901-OFAC: Northern Star (Sanctions & Channel Shifting)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Main Navigation Tabs -->
+    <nav class="flex items-center bg-slate-950/80 p-1 rounded-lg border border-slate-800 text-xs font-medium space-x-1 overflow-x-auto max-w-full">
+      <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="nav-tab active px-3 py-1.5 rounded-md flex items-center gap-2 transition text-blue-400 bg-blue-950/80 border border-blue-800">
+        <i class="fa-solid fa-chart-pie"></i> Overview
+      </button>
+      <button onclick="switchTab('intent')" id="tab-btn-intent" class="nav-tab px-3 py-1.5 rounded-md flex items-center gap-2 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-brain text-purple-400"></i> Intent & Disengagement
+      </button>
+      <button onclick="switchTab('codewords')" id="tab-btn-codewords" class="nav-tab px-3 py-1.5 rounded-md flex items-center gap-2 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-key text-amber-400"></i> Code Words
+      </button>
+      <button onclick="switchTab('entity')" id="tab-btn-entity" class="nav-tab px-3 py-1.5 rounded-md flex items-center gap-2 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-diagram-project text-emerald-400"></i> Entity Graph
+      </button>
+      <button onclick="switchTab('terminal')" id="tab-btn-terminal" class="nav-tab px-3 py-1.5 rounded-md flex items-center gap-2 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-terminal text-cyan-400"></i> AI Query Terminal
+      </button>
+      <button onclick="switchTab('evidence')" id="tab-btn-evidence" class="nav-tab px-3 py-1.5 rounded-md flex items-center gap-2 transition text-slate-400 hover:text-slate-200">
+        <i class="fa-solid fa-certificate text-red-400"></i> FRE-902 Export
+      </button>
+    </nav>
+  </header>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="flex-1 overflow-hidden relative p-4 bg-slate-950">
+
+    <!-- 1. DASHBOARD VIEW -->
+    <div id="view-dashboard" class="tab-view h-full flex flex-col gap-4 overflow-y-auto pr-1">
+      <!-- Metrics Bar -->
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
+          <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Target Ingest Corpus</div>
+          <div class="text-xl font-bold font-mono text-white" id="stat-total-docs">1,482,920</div>
+          <div class="text-[10px] text-slate-500 mt-1"><i class="fa-solid fa-file-lines text-blue-400 mr-1"></i>PSTs, Signal, PDFs</div>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
+          <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Mens Rea Intent Flags</div>
+          <div class="text-xl font-bold font-mono text-red-400 glow-red" id="stat-mens-rea">342</div>
+          <div class="text-[10px] text-red-400/80 mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>High Probative Value</div>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
+          <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Euphemism / Code Words</div>
+          <div class="text-xl font-bold font-mono text-amber-400" id="stat-codewords">18</div>
+          <div class="text-[10px] text-amber-400/80 mt-1"><i class="fa-solid fa-eye mr-1"></i>Discovered via Vector Shift</div>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
+          <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Channel-Shift Spikes</div>
+          <div class="text-xl font-bold font-mono text-purple-400" id="stat-channel-shifts">27</div>
+          <div class="text-[10px] text-purple-400/80 mt-1"><i class="fa-solid fa-arrow-right-arrow-left mr-1"></i>Ephemeral Evidentiary Triggers</div>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
+          <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Primary Conspirators</div>
+          <div class="text-xl font-bold font-mono text-cyan-400" id="stat-entities">7</div>
+          <div class="text-[10px] text-cyan-400/80 mt-1"><i class="fa-solid fa-users mr-1"></i>Mapped Centrality</div>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
+          <div class="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">Cryptographic Hash</div>
+          <div class="text-[11px] font-mono text-emerald-400 truncate mt-1">e3b0c44298fc...</div>
+          <div class="text-[10px] text-emerald-500 mt-1"><i class="fa-solid fa-lock mr-1"></i>FRE 902 Sealed</div>
+        </div>
+      </div>
+
+      <!-- Main Dashboard Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-[420px]">
+        
+        <!-- Timeline Spike Analysis -->
+        <div class="lg:col-span-2 bg-slate-900/90 border border-slate-800 rounded-lg p-4 flex flex-col">
+          <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-blue-500"></i> Communication Intensity vs. Illicit Financial Events
+            </h3>
+            <span class="text-[10px] font-mono text-slate-400">Temporal Window: Q1 2025 - Q4 2025</span>
+          </div>
+          <div class="flex-1 relative w-full h-64">
+            <canvas id="timelineChart"></canvas>
+          </div>
+          <div class="mt-3 p-2.5 bg-slate-950 border border-slate-800 rounded text-xs flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+              <span class="text-slate-300 font-medium">Critical Spike Identified:</span>
+              <span class="text-slate-400 font-mono">July 14–18, 2025 (48 hrs prior to $12.4M Geneva Wire Transfer)</span>
+            </div>
+            <button onclick="switchTab('intent')" class="text-blue-400 hover:text-blue-300 font-bold text-[11px]">Inspect Slice &rarr;</button>
+          </div>
+        </div>
+
+        <!-- High-Risk Intent Feeds -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-lg p-4 flex flex-col">
+          <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+              <i class="fa-solid fa-bolt text-amber-500"></i> Top Mens Rea Alerts
+            </h3>
+            <span class="text-[10px] font-mono bg-red-950 text-red-400 px-2 py-0.5 rounded border border-red-800">REALTIME</span>
+          </div>
+          
+          <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="dash-alert-feed">
+            <!-- Dynamic Alert Cards rendered by JS -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 2. PSYCHOLINGUISTIC & INTENT EXPLORER VIEW -->
+    <div id="view-intent" class="tab-view h-full hidden flex flex-col lg:flex-row gap-4 overflow-hidden">
+      <!-- Sidebar Filters & Document List -->
+      <div class="w-full lg:w-96 bg-slate-900/90 border border-slate-800 rounded-lg p-3 flex flex-col h-full">
+        <div class="mb-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold uppercase text-slate-200">Psycholinguistic Filters</h3>
+            <button onclick="resetIntentFilters()" class="text-[10px] text-blue-400 hover:underline">Reset</button>
+          </div>
+          <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+            <button onclick="filterIntent('moral_disengagement')" class="intent-filter-btn px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-left truncate text-purple-300 border border-slate-700" data-cat="moral_disengagement">
+              <i class="fa-solid fa-mask mr-1 text-purple-400"></i> Moral Disengage.
+            </button>
+            <button onclick="filterIntent('euphemistic')" class="intent-filter-btn px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-left truncate text-amber-300 border border-slate-700" data-cat="euphemistic">
+              <i class="fa-solid fa-quote-left mr-1 text-amber-400"></i> Euphemisms
+            </button>
+            <button onclick="filterIntent('channel_shift')" class="intent-filter-btn px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-left truncate text-red-300 border border-slate-700" data-cat="channel_shift">
+              <i class="fa-solid fa-phone-slash mr-1 text-red-400"></i> Channel Shifting
+            </button>
+            <button onclick="filterIntent('responsibility')" class="intent-filter-btn px-2 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-left truncate text-cyan-300 border border-slate-700" data-cat="responsibility">
+              <i class="fa-solid fa-user-shield mr-1 text-cyan-400"></i> Responsibility
+            </button>
+          </div>
+          <input type="text" id="intentSearchInput" onkeyup="searchIntentDocs()" placeholder="Search transcripts, emails, custodians..." class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500">
+        </div>
+
+        <!-- Document List -->
+        <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="intent-doc-list">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Main Reader Window -->
+      <div class="flex-1 bg-slate-900/90 border border-slate-800 rounded-lg p-5 flex flex-col h-full overflow-y-auto" id="intent-reader-panel">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- 3. CODE-WORD & LEXICON MAPPER -->
+    <div id="view-codewords" class="tab-view h-full hidden flex flex-col lg:flex-row gap-4 overflow-hidden">
+      <!-- Left List -->
+      <div class="w-full lg:w-80 bg-slate-900/90 border border-slate-800 rounded-lg p-3 flex flex-col h-full">
+        <div class="mb-3">
+          <h3 class="text-xs font-bold uppercase text-slate-200 mb-1">Discovered Dynamic Lexicon</h3>
+          <p class="text-[11px] text-slate-400">Identified via semantic vector displacement from standard corporate baseline.</p>
+        </div>
+        <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="codeword-list">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
+
+      <!-- Right Detail & Embeddings Context -->
+      <div class="flex-1 bg-slate-900/90 border border-slate-800 rounded-lg p-5 flex flex-col h-full overflow-y-auto" id="codeword-detail-panel">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- 4. ENTITY & NETWORK GRAPH -->
+    <div id="view-entity" class="tab-view h-full hidden flex flex-col lg:flex-row gap-4 overflow-hidden">
+      <div class="flex-1 bg-slate-900/90 border border-slate-800 rounded-lg p-4 flex flex-col h-full relative">
+        <div class="flex items-center justify-between mb-2 z-10 bg-slate-900/80 p-2 rounded border border-slate-800">
+          <div class="flex items-center gap-3">
+            <h3 class="text-xs font-bold uppercase text-slate-200"><i class="fa-solid fa-diagram-project text-emerald-400 mr-1.5"></i>Conspiratorial Entity Topology</h3>
+            <span class="text-[11px] text-slate-400 font-mono">Nodes: 7 Persons/Shells | Connections: 14 High-Probative Links</span>
+          </div>
+          <div class="flex items-center gap-2 text-xs">
+            <button onclick="renderEntityGraph()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded border border-slate-700"><i class="fa-solid fa-arrows-rotate mr-1"></i>Reset Layout</button>
+          </div>
+        </div>
+
+        <!-- Interactive SVG Canvas for Entity Graph -->
+        <div class="flex-1 relative bg-slate-950 rounded border border-slate-800 overflow-hidden flex items-center justify-center" id="graph-container">
+          <svg id="entity-svg" class="w-full h-full min-h-[450px]">
+            <!-- Rendered by JS -->
+          </svg>
+        </div>
+      </div>
+
+      <!-- Entity Inspector Drawer -->
+      <div class="w-full lg:w-80 bg-slate-900/90 border border-slate-800 rounded-lg p-4 flex flex-col h-full overflow-y-auto" id="entity-inspector">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+    <!-- 5. AI FORENSIC QUERY TERMINAL -->
+    <div id="view-terminal" class="tab-view h-full hidden flex flex-col bg-slate-900/90 border border-slate-800 rounded-lg overflow-hidden">
+      <!-- Terminal Header -->
+      <div class="bg-slate-950 border-b border-slate-800 px-4 py-2.5 flex items-center justify-between text-xs font-mono">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+          <span class="text-slate-200 font-bold">RFWaveCode LLM Forensic Agent [Local SCIF GPU Cluster]</span>
+        </div>
+        <div class="text-slate-500">RAG Vector DB: Active | System Prompt: DOJ-FCPA-Specialist</div>
+      </div>
+
+      <!-- Terminal Output Feed -->
+      <div class="flex-1 p-4 overflow-y-auto font-mono text-xs space-y-4" id="terminal-feed">
+        <div class="bg-slate-950/80 p-3 rounded border border-slate-800 text-slate-300">
+          <p class="text-cyan-400 font-bold mb-1"><i class="fa-solid fa-robot mr-1.5"></i>CognitiveForensics-AI Agent Initialized.</p>
+          <p class="text-slate-400 leading-relaxed">
+            I am trained on Federal Law, FCPA anti-bribery statutes, and psycholinguistic fraud detection heuristics. Ask any natural language question regarding custodians, euphemisms, wire transfers, or <em>mens rea</em> evidence across Case #892-FCPA.
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <button onclick="suggestQuery('Show all communications where Arthur Pendelton requests channel switching to Signal.')" class="bg-slate-900 hover:bg-slate-800 text-blue-400 border border-blue-900 px-2.5 py-1 rounded text-[11px] transition">
+              "Show Signal channel-shifting by Arthur Pendelton"
+            </button>
+            <button onclick="suggestQuery('What euphemisms were used for the $4.2M Panama consulting payment?')" class="bg-slate-900 hover:bg-slate-800 text-amber-400 border border-amber-900 px-2.5 py-1 rounded text-[11px] transition">
+              "What euphemisms masked the $4.2M Panama wire?"
+            </button>
+            <button onclick="suggestQuery('List all evidence of moral disengagement involving CEO Richard Sterling.')" class="bg-slate-900 hover:bg-slate-800 text-purple-400 border border-purple-900 px-2.5 py-1 rounded text-[11px] transition">
+              "Find moral disengagement by CEO Richard Sterling"
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Terminal Input Form -->
+      <form onsubmit="handleTerminalSubmit(event)" class="bg-slate-950 border-t border-slate-800 p-3 flex items-center gap-2">
+        <span class="text-cyan-400 font-mono text-sm font-bold pl-2">&gt;</span>
+        <input type="text" id="terminal-input" autocomplete="off" placeholder="Type forensic query (e.g., 'Find all emails mentioning blue files prior to July 15')..." class="flex-1 bg-transparent text-white font-mono text-xs focus:outline-none placeholder-slate-600">
+        <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold px-4 py-2 rounded transition flex items-center gap-1.5">
+          <i class="fa-solid fa-paper-plane"></i> Query
+        </button>
+      </form>
+    </div>
+
+    <!-- 6. COURT EVIDENCE FRE-902 EXPORT VIEW -->
+    <div id="view-evidence" class="tab-view h-full hidden flex flex-col lg:flex-row gap-4 overflow-hidden">
+      <div class="w-full lg:w-96 bg-slate-900/90 border border-slate-800 rounded-lg p-4 flex flex-col h-full">
+        <h3 class="text-xs font-bold uppercase text-slate-200 mb-2"><i class="fa-solid fa-certificate text-red-400 mr-1.5"></i>FRE 902 Exhibit Generator</h3>
+        <p class="text-xs text-slate-400 mb-4">Package selected forensic findings into a self-authenticating court record compliant with Federal Rules of Evidence Rule 702 & Rule 902(11/14).</p>
+
+        <div class="space-y-3 flex-1 overflow-y-auto">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">Target Court / Jurisdiction</label>
+            <input type="text" value="U.S. District Court for the Southern District of New York (SDNY)" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">Lead Special Agent / Affiant</label>
+            <input type="text" value="Special Agent Marcus Vance (FBI CFCU / Badge #8841)" class="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-white">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-300 mb-1">Select Included Evidentiary Items</label>
+            <div class="space-y-1.5 text-xs bg-slate-950 p-2.5 rounded border border-slate-800">
+              <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                <input type="checkbox" checked class="accent-blue-600"> Transcripts of Intent (Moral Disengagement)
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                <input type="checkbox" checked class="accent-blue-600"> Vector Code-Word Mapping Matrix
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                <input type="checkbox" checked class="accent-blue-600"> Cryptographic Chain-of-Custody SHA-256 Log
+              </label>
+              <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                <input type="checkbox" checked class="accent-blue-600"> Topological Conspirator Network Graph
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-800 flex gap-2">
+          <button onclick="generateCourtExhibit()" class="flex-1 bg-red-700 hover:bg-red-600 text-white font-bold text-xs py-2 rounded transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-file-pdf"></i> Compile FRE-902 Package
+          </button>
+        </div>
+      </div>
+
+      <!-- Exhibit Preview Window -->
+      <div class="flex-1 bg-white text-slate-900 rounded-lg p-6 sm:p-8 overflow-y-auto font-sans shadow-2xl border border-slate-300 text-xs leading-relaxed" id="evidence-preview-panel">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- SCRIPT & APPLICATION LOGIC -->
+  <script>
+    // ==========================================
+    // MOCK DATASET FOR DOJ/FBI INVESTIGATION
+    // ==========================================
+    const CASE_DATA = {
+      "case-892": {
+        title: "CASE #892-FCPA: Operation Titan (Multinational Energy Bribery)",
+        stats: { docs: "1,482,920", mensRea: 342, codewords: 18, channelShifts: 27, entities: 7 },
+        docs: [
+          {
+            id: "DOC-892-104",
+            custodian: "Arthur Pendelton (VP International Operations)",
+            type: "Signal Chat Export",
+            date: "2025-07-14T14:22:10Z",
+            category: "channel_shift",
+            confidence: 0.96,
+            summary: "Urgent shift from corporate Outlook to Signal ahead of $4.2M Panama transfer.",
+            text: `[14:21:02] Pendelton: Delete this thread after reading. Do not reply on corporate Outlook or teams under any circumstances. 
+[14:21:40] Sterling (CEO): Are the Panama docs signed?
+[14:22:10] Pendelton: Yes. We reframed the fee as a 'special administrative retainer' for the local energy board. The local ministry guys won't move the permit without their tickets. I took this off corporate email so legal doesn't have a paper trail.`,
+            highlights: [
+              { text: "Delete this thread after reading", type: "channel_shift", note: "Consciousness of guilt / Ephemeral channel request" },
+              { text: "Do not reply on corporate Outlook", type: "channel_shift", note: "Deliberate evasion of internal compliance monitoring" },
+              { text: "special administrative retainer", type: "euphemistic", note: "Euphemistic labeling for $4.2M unlawful bribery payment" },
+              { text: "without their tickets", type: "codeword", note: "Discovered code word: 'Tickets' = Kickback allocations" }
+            ]
+          },
+          {
+            id: "DOC-892-118",
+            custodian: "Richard Sterling (Chief Executive Officer)",
+            type: "Corporate Email (Outlook)",
+            date: "2025-07-15T09:12:00Z",
+            category: "moral_disengagement",
+            confidence: 0.92,
+            summary: "Rationalization of illicit foreign payments based on industry norm social proof.",
+            text: `From: rsterling@titanenergy.com
+To: apendelton@titanenergy.com
+Subject: Re: Latin America Expansion Velocity
+
+Arthur, I don't need a lecture on compliance protocols from legal. Everyone in this region operates with facilitation fees; if we play by pristine choirboy rules in Washington, our European competitors will take 100% of the offshore drilling rights and our shareholders will penalize us.
+
+Nobody is getting harmed here. It's just the cost of doing business in South America. Make sure the wire goes through the Dubai intermediary so it doesn't trigger US correspondent banking flags.`,
+            highlights: [
+              { text: "Everyone in this region operates with facilitation fees", type: "moral_disengagement", note: "Moral Disengagement: Social Proof & Diffusion of Responsibility" },
+              { text: "Nobody is getting harmed here", type: "moral_disengagement", note: "Moral Disengagement: Minimization of Harm" },
+              { text: "Dubai intermediary so it doesn't trigger US correspondent banking flags", type: "responsibility", note: "Deliberate structuring to evade BSA/AML controls" }
+            ]
+          },
+          {
+            id: "DOC-892-205",
+            custodian: "Elena Vance (Chief Financial Officer)",
+            type: "WhatsApp Audio Transcript",
+            date: "2025-07-16T18:45:30Z",
+            category: "euphemistic",
+            confidence: 0.89,
+            summary: "Discussion of invoice padding to generate offshore cash slush funds.",
+            text: `Transcript [Voice Note 0:42]: 
+"Elena here. I reviewed the blue files for the offshore pipeline vendor. We're padding the consultancy invoice by 15% to cover the local coffee expenses in Panama. The auditors won't look twice at a line item marked 'Geological Advisory Services'. Just make sure Arthur signs off on the disbursement voucher before Friday."`,
+            highlights: [
+              { text: "blue files", type: "codeword", note: "Code Word: 'Blue files' = Off-the-books accounting logs" },
+              { text: "local coffee expenses", type: "euphemistic", note: "Euphemism for local government bribes" },
+              { text: "padding the consultancy invoice by 15%", type: "moral_disengagement", note: "Invoice falsification to create slush funds" }
+            ]
+          },
+          {
+            id: "DOC-892-310",
+            custodian: "Marcus Thorne (Offshore Intermediary - Dubai)",
+            type: "Wire Ledger Memo / Swift Note",
+            date: "2025-07-18T11:04:00Z",
+            category: "responsibility",
+            confidence: 0.94,
+            summary: "Swift Wire Confirmation matching the $4.2M bribe tranche.",
+            text: `S.W.I.F.T. MT103 SINGLE CUSTOMER CREDIT TRANSFER
+SENDER: APEX GLOBAL CONSULTING FZE (DUBAI, UAE)
+RECEIVER: BANCO GENERAL DE PANAMA
+BENEFICIARY: MERIDIAN HOLDINGS INC (SHELL CORP)
+AMOUNT: USD 4,200,000.00
+REMITTANCE INFO: REF #99201 - CONSULTING SPEC SHEETS / SOIL ADVISORY FEES`,
+            highlights: [
+              { text: "MERIDIAN HOLDINGS INC (SHELL CORP)", type: "responsibility", note: "Unregistered offshore shell entity" },
+              { text: "CONSULTING SPEC SHEETS", type: "codeword", note: "Discovered euphemistic cover description" }
+            ]
+          }
+        ],
+        codewords: [
+          { word: "Tickets", meaning: "Bribery / Kickback allocations per official", frequency: 42, vectorDistance: "0.84 from baseline", sampleSnippet: "...the local ministry guys won't move without their tickets..." },
+          { word: "Blue Files", meaning: "Off-the-books slush fund ledger entries", frequency: 29, vectorDistance: "0.91 from baseline", sampleSnippet: "...reviewed the blue files for the offshore pipeline..." },
+          { word: "Coffee Expenses", meaning: "Direct cash payoffs to customs officers", frequency: 61, vectorDistance: "0.78 from baseline", sampleSnippet: "...padding the invoice to cover local coffee expenses..." },
+          { word: "Spec Sheets", meaning: "Fictitious invoice documentation for wire transfers", frequency: 19, vectorDistance: "0.88 from baseline", sampleSnippet: "...wire marked under consulting spec sheets..." }
+        ],
+        entities: [
+          { id: "e1", name: "Richard Sterling", role: "CEO - Titan Energy", risk: "CRITICAL (0.95)", Connections: ["e2", "e3", "e4"] },
+          { id: "e2", name: "Arthur Pendelton", role: "VP Int'l Operations", risk: "CRITICAL (0.98)", Connections: ["e1", "e3", "e5"] },
+          { id: "e3", name: "Elena Vance", role: "CFO - Titan Energy", risk: "HIGH (0.84)", Connections: ["e1", "e2", "e6"] },
+          { id: "e4", name: "Marcus Thorne", role: "Dubai Intermediary", risk: "HIGH (0.89)", Connections: ["e1", "e5", "e7"] },
+          { id: "e5", name: "Meridian Holdings", role: "Panama Shell Corp", risk: "HIGH (0.92)", Connections: ["e2", "e4"] },
+          { id: "e6", name: "Apex Global FZE", role: "Dubai Shell Corp", risk: "MEDIUM (0.76)", Connections: ["e3", "e4"] },
+          { id: "e7", name: "Minister Juan Gomez", role: "Foreign Energy Official", risk: "CRITICAL (0.96)", Connections: ["e4", "e5"] }
+        ]
+      }
+    };
+
+    // State Variables
+    let currentTab = 'dashboard';
+    let currentCaseKey = 'case-892';
+    let selectedDocId = 'DOC-892-104';
+    let selectedCodeword = 'Tickets';
+    let activeIntentCategory = 'all';
+
+    // ==========================================
+    // INITIALIZATION & TAB SWITCHING
+    // ==========================================
+    window.onload = function() {
+      startClock();
+      renderDashboard();
+      renderIntentDocList();
+      renderIntentReader(selectedDocId);
+      renderCodewordList();
+      renderCodewordDetail(selectedCodeword);
+      renderEntityGraph();
+      renderEvidencePreview();
+      initChart();
+    };
+
+    function startClock() {
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('live-clock').innerText = now.toUTCString().split(' ')[4] + ' UTC';
+      }, 1000);
+    }
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab').forEach(el => {
+        el.classList.remove('active', 'text-blue-400', 'bg-blue-950/80', 'border', 'border-blue-800');
+        el.classList.add('text-slate-400');
+      });
+
+      document.getElementById(`view-${tabId}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+      if (activeBtn) {
+        activeBtn.classList.add('active', 'text-blue-400', 'bg-blue-950/80', 'border', 'border-blue-800');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      if (tabId === 'entity') {
+        setTimeout(renderEntityGraph, 50);
+      }
+    }
+
+    // ==========================================
+    // 1. DASHBOARD LOGIC
+    // ==========================================
+    function renderDashboard() {
+      const cData = CASE_DATA[currentCaseKey];
+      document.getElementById('stat-total-docs').innerText = cData.stats.docs;
+      document.getElementById('stat-mens-rea').innerText = cData.stats.mensRea;
+      document.getElementById('stat-codewords').innerText = cData.stats.codewords;
+      document.getElementById('stat-channel-shifts').innerText = cData.stats.channelShifts;
+      document.getElementById('stat-entities').innerText = cData.stats.entities;
+
+      const feedContainer = document.getElementById('dash-alert-feed');
+      feedContainer.innerHTML = '';
+
+      cData.docs.forEach(doc => {
+        const card = document.createElement('div');
+        card.className = "p-2.5 bg-slate-950 border border-slate-800 rounded hover:border-slate-700 cursor-pointer transition flex items-start gap-2.5";
+        card.onclick = () => { switchTab('intent'); renderIntentReader(doc.id); };
+        
+        let tagColor = "text-purple-400 bg-purple-950 border-purple-800";
+        if (doc.category === 'channel_shift') tagColor = "text-red-400 bg-red-950 border-red-800";
+        if (doc.category === 'euphemistic') tagColor = "text-amber-400 bg-amber-950 border-amber-800";
+
+        card.innerHTML = `
+          <div class="mt-0.5 text-base"><i class="fa-solid fa-triangle-exclamation text-red-500"></i></div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-200 truncate">${doc.custodian}</span>
+              <span class="text-[9px] font-mono px-1.5 py-0.5 rounded border ${tagColor}">${doc.category.toUpperCase()}</span>
+            </div>
+            <p class="text-[11px] text-slate-400 truncate mt-0.5">${doc.summary}</p>
+            <div class="flex items-center justify-between mt-1 text-[10px] text-slate-500 font-mono">
+              <span>${doc.id}</span>
+              <span>Confidence: ${(doc.confidence * 100).toFixed(0)}%</span>
+            </div>
+          </div>
+        `;
+        feedContainer.appendChild(card);
+      });
+    }
+
+    let timelineChartInstance = null;
+    function initChart() {
+      const ctx = document.getElementById('timelineChart').getContext('2d');
+      if (timelineChartInstance) timelineChartInstance.destroy();
+
+      timelineChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['May 1', 'May 15', 'Jun 1', 'Jun 15', 'Jul 1', 'Jul 14 (Spike)', 'Jul 18', 'Aug 1', 'Aug 15'],
+          datasets: [
+            {
+              label: 'General Email Volume',
+              data: [120, 140, 130, 150, 160, 210, 180, 140, 130],
+              borderColor: '#475569',
+              borderDash: [5, 5],
+              tension: 0.3,
+              pointRadius: 2
+            },
+            {
+              label: 'Mens Rea / Intent Flags',
+              data: [4, 8, 5, 12, 18, 94, 62, 14, 9],
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 6,
+              pointBackgroundColor: '#ef4444'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } } }
+          },
+          scales: {
+            x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } },
+            y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: '#1e293b' } }
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // 2. INTENT & PSYCHOLINGUISTIC EXPLORER
+    // ==========================================
+    function filterIntent(category) {
+      activeIntentCategory = activeIntentCategory === category ? 'all' : category;
+      document.querySelectorAll('.intent-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-cat') === activeIntentCategory) {
+          btn.classList.add('border-blue-500', 'bg-blue-950');
+        } else {
+          btn.classList.remove('border-blue-500', 'bg-blue-950');
+        }
+      });
+      renderIntentDocList();
+    }
+
+    function resetIntentFilters() {
+      activeIntentCategory = 'all';
+      document.getElementById('intentSearchInput').value = '';
+      document.querySelectorAll('.intent-filter-btn').forEach(btn => btn.classList.remove('border-blue-500', 'bg-blue-950'));
+      renderIntentDocList();
+    }
+
+    function searchIntentDocs() {
+      renderIntentDocList();
+    }
+
+    function renderIntentDocList() {
+      const listContainer = document.getElementById('intent-doc-list');
+      listContainer.innerHTML = '';
+      const searchQuery = document.getElementById('intentSearchInput').value.toLowerCase();
+
+      const docs = CASE_DATA[currentCaseKey].docs.filter(doc => {
+        const matchesCat = activeIntentCategory === 'all' || doc.category === activeIntentCategory;
+        const matchesQuery = doc.custodian.toLowerCase().includes(searchQuery) || doc.text.toLowerCase().includes(searchQuery) || doc.id.toLowerCase().includes(searchQuery);
+        return matchesCat && matchesQuery;
+      });
+
+      docs.forEach(doc => {
+        const item = document.createElement('div');
+        const isActive = doc.id === selectedDocId;
+        item.className = `p-3 rounded border text-xs cursor-pointer transition ${isActive ? 'bg-blue-950/80 border-blue-500' : 'bg-slate-950 border-slate-800 hover:border-slate-700'}`;
+        item.onclick = () => renderIntentReader(doc.id);
+
+        item.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-slate-200 truncate">${doc.custodian}</span>
+            <span class="text-[9px] font-mono text-slate-400">${doc.type}</span>
+          </div>
+          <p class="text-slate-400 text-[11px] line-clamp-2 mb-2">${doc.summary}</p>
+          <div class="flex items-center justify-between text-[10px] font-mono text-slate-500">
+            <span>${doc.id}</span>
+            <span class="text-amber-400">Score: ${(doc.confidence * 100).toFixed(0)}%</span>
+          </div>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    function renderIntentReader(docId) {
+      selectedDocId = docId;
+      renderIntentDocList(); // Refresh active highlight
+      const panel = document.getElementById('intent-reader-panel');
+      const doc = CASE_DATA[currentCaseKey].docs.find(d => d.id === docId);
+
+      if (!doc) return;
+
+      let highlightedText = doc.text;
+      doc.highlights.forEach(h => {
+        let colorClass = "bg-amber-950 text-amber-200 border-amber-600";
+        if (h.type === 'channel_shift') colorClass = "bg-red-950 text-red-200 border-red-600";
+        if (h.type === 'moral_disengagement') colorClass = "bg-purple-950 text-purple-200 border-purple-600";
+
+        const span = `<mark class="${colorClass} border-b-2 px-1 py-0.5 rounded font-mono font-semibold" title="${h.note}">${h.text}</mark>`;
+        highlightedText = highlightedText.replace(h.text, span);
+      });
+
+      panel.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono bg-blue-950 text-blue-400 border border-blue-800 px-2 py-0.5 rounded">${doc.id}</span>
+              <h2 class="text-sm font-bold text-white">${doc.custodian}</h2>
+            </div>
+            <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-clock mr-1"></i>${doc.date} | Medium: <strong>${doc.type}</strong></p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded border border-emerald-800">
+              <i class="fa-solid fa-shield-halved mr-1"></i>Chain of Custody Verified
+            </span>
+          </div>
+        </div>
+
+        <!-- Highlight Legend -->
+        <div class="mb-4 p-2.5 bg-slate-950 rounded border border-slate-800 flex flex-wrap gap-3 text-[11px]">
+          <span class="text-slate-400 font-bold">Detected Cognitive Markers:</span>
+          <span class="text-red-400 flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-red-900 border border-red-500"></span> Channel Shifting</span>
+          <span class="text-purple-400 flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-purple-900 border border-purple-500"></span> Moral Disengagement</span>
+          <span class="text-amber-400 flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-amber-900 border border-amber-500"></span> Euphemism / Code Word</span>
+        </div>
+
+        <!-- Main Transcript Display -->
+        <div class="flex-1 bg-slate-950 border border-slate-800 rounded p-4 font-mono text-xs leading-relaxed whitespace-pre-wrap text-slate-200 overflow-y-auto mb-4">
+          ${highlightedText}
+        </div>
+
+        <!-- Annotations Box -->
+        <div class="bg-slate-950 border border-slate-800 rounded p-3">
+          <h4 class="text-xs font-bold uppercase text-slate-300 mb-2"><i class="fa-solid fa-microchip text-blue-400 mr-1.5"></i>Psycholinguistic Model Analysis</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+            ${doc.highlights.map(h => `
+              <div class="p-2 bg-slate-900 rounded border border-slate-800 flex items-start gap-2">
+                <i class="fa-solid fa-circle-info text-blue-400 mt-0.5"></i>
+                <div>
+                  <div class="font-bold text-slate-200">"${h.text}"</div>
+                  <div class="text-[11px] text-slate-400 mt-0.5">${h.note}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 3. CODE-WORD & LEXICON MAPPER LOGIC
+    // ==========================================
+    function renderCodewordList() {
+      const container = document.getElementById('codeword-list');
+      container.innerHTML = '';
+
+      CASE_DATA[currentCaseKey].codewords.forEach(cw => {
+        const isActive = cw.word === selectedCodeword;
+        const item = document.createElement('div');
+        item.className = `p-3 rounded border text-xs cursor-pointer transition ${isActive ? 'bg-amber-950/80 border-amber-500' : 'bg-slate-950 border-slate-800 hover:border-slate-700'}`;
+        item.onclick = () => renderCodewordDetail(cw.word);
+
+        item.innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-amber-300 text-sm font-mono font-bold">"${cw.word}"</span>
+            <span class="text-[10px] font-mono text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">${cw.frequency} hits</span>
+          </div>
+          <p class="text-slate-400 text-[11px] line-clamp-1">${cw.meaning}</p>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderCodewordDetail(word) {
+      selectedCodeword = word;
+      renderCodewordList();
+      const panel = document.getElementById('codeword-detail-panel');
+      const cw = CASE_DATA[currentCaseKey].codewords.find(c => c.word === word);
+
+      if (!cw) return;
+
+      panel.innerHTML = `
+        <div class="border-b border-slate-800 pb-3 mb-4 flex items-center justify-between">
+          <div>
+            <span class="text-xs font-mono text-amber-400 uppercase tracking-wider">Semantic Vector Anomaly</span>
+            <h2 class="text-xl font-mono font-extrabold text-amber-300 mt-0.5">"${cw.word}"</h2>
+          </div>
+          <div class="text-right">
+            <span class="text-xs font-mono text-slate-400">Vector Shift Score:</span>
+            <div class="text-sm font-mono font-bold text-red-400">${cw.vectorDistance}</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="bg-slate-950 border border-slate-800 rounded p-3">
+            <div class="text-[10px] font-mono text-slate-400 uppercase mb-1">Inferred Forensic Meaning</div>
+            <div class="text-sm font-bold text-slate-200">${cw.meaning}</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded p-3">
+            <div class="text-[10px] font-mono text-slate-400 uppercase mb-1">Total System Frequency</div>
+            <div class="text-sm font-bold font-mono text-blue-400">${cw.frequency} Instances across PST & Chat Archives</div>
+          </div>
+        </div>
+
+        <h4 class="text-xs font-bold uppercase text-slate-300 mb-2"><i class="fa-solid fa-quote-left text-amber-400 mr-1.5"></i>Representative Contextual Excerpt</h4>
+        <div class="bg-slate-950 border border-slate-800 rounded p-4 font-mono text-xs text-amber-200/90 leading-relaxed italic mb-6">
+          "${cw.sampleSnippet}"
+        </div>
+
+        <h4 class="text-xs font-bold uppercase text-slate-300 mb-2"><i class="fa-solid fa-network-wired text-cyan-400 mr-1.5"></i>Cosine Similarity Vector Cluster Space</h4>
+        <div class="bg-slate-950 border border-slate-800 rounded p-4 flex items-center justify-center min-h-[200px] relative overflow-hidden">
+          <div class="text-center space-y-2">
+            <div class="inline-block bg-amber-950 text-amber-300 font-mono font-bold px-3 py-1.5 rounded border border-amber-600 shadow-lg">
+              Target Vector: "${cw.word}"
+            </div>
+            <div class="flex items-center justify-center gap-4 text-xs font-mono text-slate-400 mt-4">
+              <span class="p-2 bg-slate-900 rounded border border-slate-800">Kickback (0.91)</span>
+              <span class="p-2 bg-slate-900 rounded border border-slate-800">Slush Fund (0.87)</span>
+              <span class="p-2 bg-slate-900 rounded border border-slate-800">Bribe (0.84)</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 4. ENTITY & NETWORK GRAPH
+    // ==========================================
+    function renderEntityGraph() {
+      const svg = document.getElementById('entity-svg');
+      if (!svg) return;
+      svg.innerHTML = '';
+
+      const entities = CASE_DATA[currentCaseKey].entities;
+      const width = svg.clientWidth || 600;
+      const height = svg.clientHeight || 450;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = Math.min(width, height) * 0.35;
+
+      // Position nodes in circle
+      const nodePositions = {};
+      entities.forEach((ent, idx) => {
+        const angle = (idx / entities.length) * 2 * Math.PI;
+        nodePositions[ent.id] = {
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle),
+          data: ent
+        };
+      });
+
+      // Draw Connection Lines
+      entities.forEach(ent => {
+        const sourcePos = nodePositions[ent.id];
+        ent.Connections.forEach(targetId => {
+          const targetPos = nodePositions[targetId];
+          if (targetPos) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', sourcePos.x);
+            line.setAttribute('y1', sourcePos.y);
+            line.setAttribute('x2', targetPos.x);
+            line.setAttribute('y2', targetPos.y);
+            line.setAttribute('stroke', '#1e3a8a');
+            line.setAttribute('stroke-width', '1.5');
+            line.setAttribute('stroke-dasharray', '4,4');
+            svg.appendChild(line);
+          }
+        });
+      });
+
+      // Draw Nodes
+      Object.keys(nodePositions).forEach(id => {
+        const pos = nodePositions[id];
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('class', 'cursor-pointer');
+        g.onclick = () => inspectEntity(pos.data);
+
+        // Circle
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', pos.x);
+        circle.setAttribute('cy', pos.y);
+        circle.setAttribute('r', '22');
+        circle.setAttribute('fill', pos.data.risk.includes('CRITICAL') ? '#7f1d1d' : '#1e293b');
+        circle.setAttribute('stroke', pos.data.risk.includes('CRITICAL') ? '#ef4444' : '#3b82f6');
+        circle.setAttribute('stroke-width', '2');
+
+        // Text Label
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', pos.x);
+        text.setAttribute('y', pos.y + 35);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', '#e2e8f0');
+        text.setAttribute('font-size', '10');
+        text.setAttribute('font-weight', 'bold');
+        text.setAttribute('font-family', 'JetBrains Mono');
+        text.textContent = pos.data.name;
+
+        g.appendChild(circle);
+        g.appendChild(text);
+        svg.appendChild(g);
+      });
+
+      inspectEntity(entities[0]);
+    }
+
+    function inspectEntity(ent) {
+      const inspector = document.getElementById('entity-inspector');
+      inspector.innerHTML = `
+        <div class="border-b border-slate-800 pb-3 mb-3">
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded border ${ent.risk.includes('CRITICAL') ? 'bg-red-950 text-red-400 border-red-800' : 'bg-blue-950 text-blue-400 border-blue-800'} font-bold">
+            ${ent.risk}
+          </span>
+          <h3 class="text-base font-bold text-white mt-2">${ent.name}</h3>
+          <p class="text-xs text-slate-400">${ent.role}</p>
+        </div>
+
+        <div class="space-y-3 text-xs">
+          <div class="p-2.5 bg-slate-950 rounded border border-slate-800">
+            <span class="text-[10px] font-mono text-slate-500 uppercase block mb-1">Direct Network Nodes</span>
+            <div class="font-mono text-slate-300 font-bold">${ent.Connections.length} Primary Conspiratorial Ties</div>
+          </div>
+
+          <div class="p-2.5 bg-slate-950 rounded border border-slate-800">
+            <span class="text-[10px] font-mono text-slate-500 uppercase block mb-1">Centrality Threat Rating</span>
+            <p class="text-slate-300 leading-relaxed">
+              High eigenvector centrality in the Dubai-Panama bribery pipeline. Identified as key decision maker in off-record communication shifts.
+            </p>
+          </div>
+
+          <button onclick="switchTab('intent')" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs py-2 rounded transition">
+            Inspect All Messages from ${ent.name.split(' ')[0]}
+          </button>
+        </div>
+      `;
+    }
+
+    // ==========================================
+    // 5. AI QUERY TERMINAL LOGIC
+    // ==========================================
+    function suggestQuery(q) {
+      document.getElementById('terminal-input').value = q;
+    }
+
+    function handleTerminalSubmit(e) {
+      e.preventDefault();
+      const input = document.getElementById('terminal-input');
+      const query = input.value.trim();
+      if (!query) return;
+
+      const feed = document.getElementById('terminal-feed');
+
+      // Add User Question
+      const userMsg = document.createElement('div');
+      userMsg.className = "p-2.5 bg-slate-900 border border-slate-800 rounded text-cyan-300 font-mono text-xs flex items-start gap-2";
+      userMsg.innerHTML = `<span class="text-slate-500">&gt;</span> <div><strong>Query:</strong> ${query}</div>`;
+      feed.appendChild(userMsg);
+
+      input.value = '';
+      feed.scrollTop = feed.scrollHeight;
+
+      // Add Loading Indicator
+      const loading = document.createElement('div');
+      loading.className = "text-slate-500 font-mono text-xs italic flex items-center gap-2";
+      loading.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Executing semantic vector search against 1.48M embeddings...`;
+      feed.appendChild(loading);
+      feed.scrollTop = feed.scrollHeight;
+
+      setTimeout(() => {
+        loading.remove();
+
+        const agentMsg = document.createElement('div');
+        agentMsg.className = "p-3 bg-slate-950 border border-blue-900/60 rounded text-slate-200 font-mono text-xs space-y-2";
+
+        let responseText = "Based on semantic vector matching against Case #892-FCPA corpora, the system identified 3 direct evidentiary items matching your query:";
+        if (query.toLowerCase().includes('signal') || query.toLowerCase().includes('channel')) {
+          responseText = "FOUND 1 HIGH-PROBATIVE CHANNEL-SHIFT EVENT:\nCustodian: Arthur Pendelton (VP Ops)\nTimestamp: 2025-07-14T14:22:10Z\nExcerpt: 'Delete this thread after reading. Do not reply on corporate Outlook... I took this off corporate email so legal doesn't have a paper trail.'";
+        } else if (query.toLowerCase().includes('euphemism') || query.toLowerCase().includes('panama')) {
+          responseText = "FOUND 2 EUPHEMISTIC LABELS MASKING PANAMA BRIBERY:\n1. 'Special administrative retainer' ($4.2M wire to Meridian Holdings)\n2. 'Local coffee expenses' (Invoice padding via geological advisory line items)";
+        }
+
+        agentMsg.innerHTML = `
+          <div class="text-emerald-400 font-bold flex items-center gap-1.5">
+            <i class="fa-solid fa-check-circle"></i> Evidence Search Complete (Confidence: 97.4%)
+          </div>
+          <div class="text-slate-300 leading-relaxed whitespace-pre-wrap bg-slate-900 p-2.5 rounded border border-slate-800">${responseText}</div>
+          <div class="text-[10px] text-slate-500">FRE 902 Hash: sha256_e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</div>
+        `;
+
+        feed.appendChild(agentMsg);
+        feed.scrollTop = feed.scrollHeight;
+      }, 800);
+    }
+
+    // ==========================================
+    // 6. FRE 902 COURT EXHIBIT LOGIC
+    // ==========================================
+    function generateCourtExhibit() {
+      renderEvidencePreview();
+    }
+
+    function renderEvidencePreview() {
+      const container = document.getElementById('evidence-preview-panel');
+      const cData = CASE_DATA[currentCaseKey];
+
+      container.innerHTML = `
+        <div class="border-b-2 border-slate-900 pb-4 mb-6 flex justify-between items-start">
+          <div>
+            <h1 class="text-lg font-black uppercase text-slate-900 tracking-tight">UNITED STATES DISTRICT COURT</h1>
+            <p class="text-xs font-bold text-slate-700">SOUTHERN DISTRICT OF NEW YORK</p>
+            <p class="text-xs text-slate-600 mt-1">UNITED STATES OF AMERICA v. TITAN ENERGY CORP ET AL.</p>
+          </div>
+          <div class="text-right">
+            <div class="inline-block bg-slate-900 text-white font-mono font-bold px-3 py-1 text-xs uppercase">EXHIBIT FRE-902-A</div>
+            <p class="text-[10px] font-mono text-slate-500 mt-1">FILED UNDER SEAL</p>
+          </div>
+        </div>
+
+        <div class="bg-slate-100 p-3 rounded border border-slate-300 mb-6 space-y-1 text-xs">
+          <div><strong>AFFEANT:</strong> Special Agent Marcus Vance, FBI Financial Crimes Section</div>
+          <div><strong>EVIDENTIARY SYSTEM:</strong> RFWaveCode CognitiveForensics-AI™ (v4.8-FED)</div>
+          <div><strong>SELF-AUTHENTICATING CERTIFICATION:</strong> Pursuant to FRE Rule 902(11) and Rule 902(14)</div>
+          <div><strong>DIGITAL HASH (SHA-256):</strong> <span class="font-mono text-[10px] bg-white px-1 border border-slate-300">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span></div>
+        </div>
+
+        <h3 class="font-bold text-slate-900 uppercase text-xs mb-2 border-b border-slate-300 pb-1">I. SUMMARY OF PROBATIVE MENS REA TRANSCRIPTS</h3>
+        <div class="space-y-3 mb-6">
+          ${cData.docs.map(d => `
+            <div class="p-3 bg-slate-50 border border-slate-300 rounded font-mono text-[11px]">
+              <div class="flex justify-between font-bold text-slate-800 mb-1">
+                <span>[${d.id}] CUSTODIAN: ${d.custodian.toUpperCase()}</span>
+                <span>DATE: ${d.date}</span>
+              </div>
+              <div class="text-slate-700 italic border-l-2 border-slate-800 pl-2 my-1.5 whitespace-pre-wrap">${d.text}</div>
+              <div class="text-[10px] text-red-700 font-bold">PSYCHOLINGUISTIC FLAG: ${d.summary}</div>
+            </div>
+          `).map(item => item).join('')}
+        </div>
+
+        <h3 class="font-bold text-slate-900 uppercase text-xs mb-2 border-b border-slate-300 pb-1">II. CERTIFICATION OF ACCURACY & CHAIN OF CUSTODY</h3>
+        <p class="text-xs text-slate-700 mb-6 text-justify">
+          I declare under penalty of perjury under the laws of the United States of America that the foregoing forensic extractions were processed using air-gapped neural vector models without altering original bitstream images or PST container metadata.
+        </p>
+
+        <div class="pt-6 border-t border-slate-400 grid grid-cols-2 gap-8 text-xs">
+          <div>
+            <div class="border-b border-slate-800 h-8 mb-1"></div>
+            <strong class="text-slate-900">Special Agent Marcus Vance</strong>
+            <p class="text-slate-600">Federal Bureau of Investigation</p>
+          </div>
+          <div>
+            <div class="border-b border-slate-800 h-8 mb-1"></div>
+            <strong class="text-slate-900">Senior Trial Attorney</strong>
+            <p class="text-slate-600">DOJ Criminal Division, Fraud Section</p>
+          </div>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>
+
